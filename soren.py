@@ -13,14 +13,14 @@ args = parser.parse_args()
 URL = args.u
 wordlist = args.w
 fileName = args.f
-
+lddddddddddddddddddddddddddddd
 ToSave = args.s
 To_Print_300 = args.t
 To_Print_200 = args.o
 
 temp = open(wordlist,'r').read().split('\n')
 urls =  list()
-
+hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
 for line in temp:
     urls.append(URL + '/' + line)
     
