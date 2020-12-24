@@ -1,4 +1,5 @@
 import argparse
+from bs4 import BeautifulSoup
 import requests
 from requests_futures.sessions import FuturesSession
 parser = argparse.ArgumentParser()
@@ -26,11 +27,11 @@ for line in temp:
     
 with FuturesSession(max_workers=100) as session:
     re_location = set()
+    check = set()
     futures = [session.get(url ,allow_redirects=False) for url in urls]
     for future in futures:
         all_response = future.result()
         if To_Print_300:
-            
             if all_response.status_code in [301,302]:
                 if all_response.headers['Location'] not  in re_location:
                     if ToSave:
@@ -41,16 +42,19 @@ with FuturesSession(max_workers=100) as session:
                     print(all_response.url,end=" >> ")
                     print(all_response.headers['Location'])
                     re_location.add(all_response.headers['Location'])
-
                     store = all_response.url.split('/')
                     check1 = "/" + str(store[-1]) + "/"
                     check2 = all_response.url + '/'
                     same = (all_response.headers['Location'])
+
                     if check1 == same or check2 == same:
                         newResponse = all_response.url +"/"
                         r = requests.get(newResponse)
-                        print("->",r.status_code, end=" , ")
-                        print(r.url)
+                        soup = BeautifulSoup(r.text, 'html.parser')
+                        if soup.title.string not in check:
+                            check.add(soup.title.string)
+                            print("->",r.status_code, end=" , ")
+                            print(r.url)               
         elif To_Print_200:
             if all_response.status_code in [200]:
                 if ToSave:
@@ -74,4 +78,4 @@ with FuturesSession(max_workers=100) as session:
             else:
                 print("status:",all_response.status_code,end=" , ")
                 print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
-                print(all_response.url)
+                print(all_response.url)   
