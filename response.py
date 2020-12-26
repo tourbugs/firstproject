@@ -1,3 +1,5 @@
+from bs4 import SoupStrainer
+import bs4 as bs
 import argparse
 from bs4 import BeautifulSoup
 import requests
@@ -49,12 +51,25 @@ with FuturesSession(max_workers=100) as session:
 
                     if check1 == same or check2 == same:
                         newResponse = all_response.url +"/"
-                        r = requests.get(newResponse)
-                        soup = BeautifulSoup(r.text, 'html.parser')
-                        if soup.title.string not in check:
-                            check.add(soup.title.string)
-                            print("->",r.status_code, end=" , ")
-                            print(r.url)               
+                        with FuturesSession() as session1:
+                            r = session1.get(newResponse)
+                            r = r.result()
+                            soup = BeautifulSoup(r.text, 'html.parser')
+                            ifmeta = soup.find("meta")
+                            if ifmeta.has_attr('content') and ifmeta.has_attr('http-equiv'):
+                                if "refresh" == (soup.meta.get('http-equiv')):
+                                    metaURL= (soup.meta.get('content'))
+                                    if metaURL is not None:
+                                        filtering = metaURL.split('=')
+                                        filterURL = filtering[-1]
+                                        newR = session1.get(filterURL)
+                                        newR = newR.result()
+                                        print("->",newR.status_code, end=" , ")
+                                        print(newR.url)
+                            else:
+                                print("->",r.status_code, end=" , ")
+                                print(r.url)
+                                                  
         elif To_Print_200:
             if all_response.status_code in [200]:
                 if ToSave:
@@ -63,6 +78,14 @@ with FuturesSession(max_workers=100) as session:
                 print("status:",all_response.status_code,end=" , ")
                 print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
                 print(all_response.url)
+                for link in bs.BeautifulSoup(all_response.text, 'html.parser',parseOnlyThese=SoupStrainer('meta')):
+                     if "refresh" == link.get('http-equiv'):
+                        metaURL= link.get('content')
+                        filtering = metaURL.split('=')
+                        filterURL = filtering[-1]
+                        newR = requests.get(filterURL)
+                        print("->",newR.status_code, end=" , ")
+                        print(newR.url)        
         else:
             if all_response.status_code in [301,302]:
                 if all_response.headers['Location'] not  in re_location:
