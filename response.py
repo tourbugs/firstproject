@@ -29,7 +29,7 @@ for line in temp:
     
 with FuturesSession(max_workers=100) as session:
     re_location = set()
-    check = set()
+    li = []
     futures = [session.get(url ,allow_redirects=False) for url in urls]
     for future in futures:
         all_response = future.result()
@@ -75,17 +75,28 @@ with FuturesSession(max_workers=100) as session:
                 if ToSave:
                     with open(fileName,'a') as wf:
                         wf.write(all_response.url + "\n")
-                print("status:",all_response.status_code,end=" , ")
-                print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
-                print(all_response.url)
-                for link in bs.BeautifulSoup(all_response.text, 'html.parser',parseOnlyThese=SoupStrainer('meta')):
-                     if "refresh" == link.get('http-equiv'):
-                        metaURL= link.get('content')
-                        filtering = metaURL.split('=')
-                        filterURL = filtering[-1]
-                        newR = requests.get(filterURL)
-                        print("->",newR.status_code, end=" , ")
-                        print(newR.url)        
+                store = all_response.url.split('.')
+                check = store[-1]
+                if check in ['json','ico','xml','txt']:       
+                    print("status:",all_response.status_code,end=" , ")
+                    print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
+                    print(all_response.url)
+                    continue
+                soup200 = BeautifulSoup(all_response.text, 'html.parser')
+                response = list(([tag.name for tag in soup200.find_all()]))
+                if response not in li:
+                    print("status:",all_response.status_code,end=" , ")
+                    print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
+                    print(all_response.url)
+                    li.append(response) 
+                # for link in bs.BeautifulSoup(all_response.text, 'html.parser',parseOnlyThese=SoupStrainer('meta')):
+                #      if "refresh" == link.get('http-equiv'):
+                #         metaURL= link.get('content')
+                #         filtering = metaURL.split('=')
+                #         filterURL = filtering[-1]
+                #         newR = requests.get(filterURL)
+                #         print("->",newR.status_code, end=" , ")
+                #         print(newR.url)        
         else:
             if all_response.status_code in [301,302]:
                 if all_response.headers['Location'] not  in re_location:
