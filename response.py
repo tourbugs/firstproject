@@ -1,5 +1,6 @@
 from bs4 import SoupStrainer
 import bs4 as bs
+import datetime
 import argparse
 from bs4 import BeautifulSoup
 import requests
@@ -26,6 +27,12 @@ urls =  list()
 
 for line in temp:
     urls.append(URL + '/' + line)
+
+try:
+    checklist = [x for x in open('checklist200.txt','r').read().split('\n')]
+except:
+    pass
+realtime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     
 with FuturesSession(max_workers=100) as session:
     re_location = set()
@@ -75,6 +82,24 @@ with FuturesSession(max_workers=100) as session:
                 if ToSave:
                     with open(fileName,'a') as wf:
                         wf.write(all_response.url + "\n")
+                try:
+                    if all_response.url not in checklist:
+                        with open('checklist200.txt','a') as file:
+                            file.write(all_response.url + "\n")
+                        with open('200Response.txt','a') as printing:
+                            printing.write("New Response "+realtime +"\t"+ all_response.url + "\n")
+                        print("new response",end=" ")
+                        print("status:",all_response.status_code,end=" , ")
+                        print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
+                        print(all_response.url)
+                        continue
+                except:
+                    with open('checklist200.txt','a') as file:
+                        file.write(all_response.url + "\n")
+                    with open('200Response.txt','a') as printing:
+                        printing.write(realtime +"\t" + all_response.url + "\n")
+ 
+            
                 store = all_response.url.split('.')
                 check = store[-1]
                 if check in ['json','ico','xml','txt']:       
