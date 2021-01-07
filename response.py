@@ -1,5 +1,4 @@
-from bs4 import SoupStrainer
-import bs4 as bs
+
 import datetime
 import argparse
 from bs4 import BeautifulSoup
@@ -14,7 +13,21 @@ parser.add_argument("-t", action='store_true',default=False, help="To print 300 
 parser.add_argument("-o", action='store_true',default=False, help="To print 200 response")
 args = parser.parse_args()
 
+def replace(URL):
+    Str = ""
+    for char in URL:
+        if char>='a' and char <= 'z':
+            Str +=char
+        else:
+            continue
+    newStr1 = Str +'.txt'
+    newStr2 = '.'+Str +'_temp.txt'
+    return newStr1 ,newStr2
+
 URL = args.u
+CURL = URL.split('//')
+CURL = CURL[-1]
+Str,StrTemp = replace(CURL)
 wordlist = args.w
 fileName = args.f
 
@@ -29,7 +42,7 @@ for line in temp:
     urls.append(URL + '/' + line)
 
 try:
-    checklist = [x for x in open('checklist200.txt','r').read().split('\n')]
+    checklist = [x for x in open(StrTemp,'r').read().split('\n')]
 except:
     pass
 realtime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -81,25 +94,7 @@ with FuturesSession(max_workers=100) as session:
             if all_response.status_code in [200]:
                 if ToSave:
                     with open(fileName,'a') as wf:
-                        wf.write(all_response.url + "\n")
-                try:
-                    if all_response.url not in checklist:
-                        with open('checklist200.txt','a') as file:
-                            file.write(all_response.url + "\n")
-                        with open('200Response.txt','a') as printing:
-                            printing.write("New Response "+realtime +"\t"+ all_response.url + "\n")
-                        print("new response",end=" ")
-                        print("status:",all_response.status_code,end=" , ")
-                        print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
-                        print(all_response.url)
-                        continue
-                except:
-                    with open('checklist200.txt','a') as file:
-                        file.write(all_response.url + "\n")
-                    with open('200Response.txt','a') as printing:
-                        printing.write(realtime +"\t" + all_response.url + "\n")
- 
-            
+                        wf.write(all_response.url + "\n")           
                 store = all_response.url.split('.')
                 check = store[-1]
                 if check in ['json','ico','xml','txt']:       
@@ -110,10 +105,29 @@ with FuturesSession(max_workers=100) as session:
                 soup200 = BeautifulSoup(all_response.text, 'html.parser')
                 response = list(([tag.name for tag in soup200.find_all()]))
                 if response not in li:
+                    li.append(response) 
+                    try:
+                        if all_response.url not in checklist:
+                            with open(StrTemp,'a') as file:
+                                file.write(all_response.url + "\n")
+                            with open(Str,'a') as printing:
+                                printing.write("New Response "+realtime +"\t"+ all_response.url + "\n")
+                            print("new response",end=" ")
+                            print("status:",all_response.status_code,end=" , ")
+                            print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
+                            print(all_response.url)
+                            continue
+                    
+                    except:
+                        with open(StrTemp,'a') as file:
+                            file.write(all_response.url + "\n")
+                        with open(Str,'a') as printing:
+                            printing.write(realtime +"\t" + all_response.url + "\n")
+
                     print("status:",all_response.status_code,end=" , ")
                     print("Size:" ,all_response.headers.get('Content-Length'), end=" , ")
                     print(all_response.url)
-                    li.append(response) 
+                    
                 # for link in bs.BeautifulSoup(all_response.text, 'html.parser',parseOnlyThese=SoupStrainer('meta')):
                 #      if "refresh" == link.get('http-equiv'):
                 #         metaURL= link.get('content')
